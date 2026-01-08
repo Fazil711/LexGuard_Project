@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from models.models import Case
 import uuid
+from routers.auth import get_current_user
+from models.models import User
 
 router = APIRouter(
     prefix="/api/cases",
@@ -10,16 +12,16 @@ router = APIRouter(
 )
 
 @router.post("/")
-async def create_case(payload: dict, db: Session = Depends(get_db)):
+async def create_case(
+    payload: dict, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     new_case = Case(
-        title=payload.get("title", "Untitled Case"),
-        category=payload.get("category", "General"),
+        title=payload.get("title"),
+        category=payload.get("category"),
         status="intake"
     )
-    db.add(new_case)
-    db.commit()
-    db.refresh(new_case)
-    return new_case
 
 @router.get("/")
 async def list_cases(db: Session = Depends(get_db)):

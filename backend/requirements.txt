@@ -13,3 +13,5 @@ pypdf
 openpyxl
 tiktoken
 sentence-transformers
+passlib[bcrypt]
+python-jose[cryptography]
