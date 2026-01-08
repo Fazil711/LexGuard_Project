@@ -26,6 +26,6 @@ async def upload_document(
     db.commit()
     db.refresh(new_doc)
     
-    background_tasks.add_task(process_document, file_path)
+    background_tasks.add_task(process_document, file_path, new_doc.id)
     
     return {"message": "File uploaded and processing started", "doc_id": new_doc.id}

@@ -3,6 +3,8 @@ from langchain_classic.chains import RetrievalQA
 from langchain_classic.prompts import PromptTemplate
 from services.rag_service import get_retriever
 import os
+import json
+from langchain_classic.schema import HumanMessage, SystemMessage
 
 llm = ChatOpenAI(
     model_name="gpt-4o", 
@@ -49,3 +51,69 @@ def get_chat_response(case_id: str, user_query: str):
     except Exception as e:
         print(f"Error in LLM generation: {e}")
         return "I encountered an error processing your request."
+    
+def analyze_document_text(text_content: str):
+    """
+    Sends document text to LLM to extract structured legal metadata.
+    Returns a Python dictionary (JSON).
+    """
+    system_prompt = """
+    You are an experienced Indian corporate lawyer. 
+    Analyze the legal document text provided and return a STRICT JSON object with these keys:
+    - parties (list of strings)
+    - agreement_type (string)
+    - termination_clause (summary string)
+    - payment_terms (summary string)
+    - liability_indemnity (summary string)
+    - risk_rating (High/Medium/Low)
+    - key_risks (list of strings)
+    
+    Do not add markdown formatting (like ```json). Just return the raw JSON string.
+    """
+    
+    truncated_text = text_content[:15000]
+    
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=f"Document Text:\n{truncated_text}")
+    ]
+    
+    try:
+        response = llm.invoke(messages)
+        content = response.content.strip()
+        
+        if content.startswith("```json"):
+            content = content.replace("```json", "").replace("```", "")
+            
+        return json.loads(content)
+    except Exception as e:
+        print(f"Error analyzing document: {e}")
+        return {"error": "Failed to analyze document"}
+    
+def generate_case_strategy(case_summary: str, doc_analyses: list):
+    """
+    Generates a legal strategy based on case details and analyzed documents.
+    """
+    system_prompt = """
+    You are a Senior Legal Strategist. Based on the case summary and document analysis provided, 
+    output a strategic plan in JSON format with:
+    - summary (brief overview)
+    - safe_plan (list of conservative steps)
+    - aggressive_plan (list of assertive steps)
+    - missing_documents (what else is needed)
+    """
+    
+    user_content = f"""
+    CASE SUMMARY: {case_summary}
+    
+    DOCUMENT ANALYSES:
+    {json.dumps(doc_analyses, indent=2)}
+    """
+    
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=user_content)
+    ]
+    
+    response = llm.invoke(messages)
+    return response.content

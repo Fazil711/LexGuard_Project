@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from routers import auth, cases, chat, documents
+from routers import auth, cases, chat, documents, strategy
 
 app = FastAPI(
     title="LexGuard API",
@@ -21,6 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(strategy.router)
 app.include_router(auth.router)
 app.include_router(cases.router)
 app.include_router(chat.router)
