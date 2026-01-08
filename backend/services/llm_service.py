@@ -5,6 +5,7 @@ from services.rag_service import get_retriever
 import os
 import json
 from langchain_classic.schema import HumanMessage, SystemMessage
+import openai
 
 llm = ChatOpenAI(
     model_name="gpt-4o", 
@@ -117,3 +118,18 @@ def generate_case_strategy(case_summary: str, doc_analyses: list):
     
     response = llm.invoke(messages)
     return response.content
+
+def transcribe_audio(file_path: str):
+    """
+    Uses OpenAI Whisper API to convert audio file to text.
+    """
+    try:
+        with open(file_path, "rb") as audio_file:
+            transcript = openai.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file
+            )
+        return transcript.text
+    except Exception as e:
+        print(f"Error transcribing audio: {e}")
+        return None
