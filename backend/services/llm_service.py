@@ -12,7 +12,7 @@ llm = ChatOpenAI(
     temperature=0,
     openai_api_key=os.getenv("OPENAI_API_KEY")
 )
-
+'''
 def get_chat_response(case_id: str, user_query: str):
     """
     1. Fetches relevant documents from VectorDB (filtered by case_id if possible).
@@ -52,7 +52,42 @@ def get_chat_response(case_id: str, user_query: str):
     except Exception as e:
         print(f"Error in LLM generation: {e}")
         return "I encountered an error processing your request."
+'''
+def get_chat_response(case_id: str, user_query: str):
+    retriever = get_retriever(case_id=case_id)
     
+    try:
+        retrieved_docs = retriever.invoke(user_query) 
+        print(f"\n🔍 DEBUG: Retrieved {len(retrieved_docs)} chunks for query: '{user_query}'")
+        for i, doc in enumerate(retrieved_docs):
+            print(f"   Chunk {i+1}: {doc.page_content[:100]}...") 
+    except Exception as e:
+        print(f"⚠️ DEBUG Error retrieving docs: {e}")
+
+    prompt_template = """
+    You are LexGuard, an AI Corporate Lawyer.
+    Use the provided legal context to answer the question.
+    If the answer is not in the context, say "I couldn't find that information in the documents."
+    
+    Context:
+    {context}
+    
+    Question: {question}
+    
+    Answer:
+    """
+    
+    PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+    
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm, 
+        chain_type="stuff", 
+        retriever=retriever,
+        chain_type_kwargs={"prompt": PROMPT}
+    )
+    
+    return qa_chain.run(user_query)
+
 def analyze_document_text(text_content: str):
     """
     Sends document text to LLM to extract structured legal metadata.

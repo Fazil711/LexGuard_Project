@@ -47,6 +47,15 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteCase = async (id) => {
+    try {
+        await api.delete(`/cases/${id}`);
+        fetchCases();
+    } catch (err) {
+        alert("Failed to delete case");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
@@ -100,6 +109,17 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-400">
                     {new Date(c.created_at).toLocaleDateString()}
                   </span>
+                  <button 
+                    onClick={(e) => {
+                    e.stopPropagation(); // Prevent clicking the card itself
+                    if(confirm('Are you sure? This will delete all documents and chats.')) {
+                        handleDeleteCase(c.id);
+                    }
+                    }}
+                    className="text-gray-400 hover:text-red-600 font-bold px-2"
+                    >
+                    ✕
+                    </button>
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-lex-600 transition-colors">
                   {c.title}
