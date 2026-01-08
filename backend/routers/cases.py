@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from core.database import get_db
 from models.models import Case
 import uuid
@@ -29,7 +29,11 @@ async def list_cases(db: Session = Depends(get_db)):
 
 @router.get("/{case_id}")
 async def get_case_details(case_id: str, db: Session = Depends(get_db)):
-    case = db.query(Case).filter(Case.id == case_id).first()
+    case = db.query(Case)\
+        .options(joinedload(Case.messages), joinedload(Case.documents))\
+        .filter(Case.id == case_id)\
+        .first()
+        
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     return case
